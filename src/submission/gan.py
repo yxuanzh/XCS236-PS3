@@ -137,7 +137,7 @@ def loss_wasserstein_gp_d(g, d, x_real, *, device):
     grad = torch.autograd.grad(
         outputs=d_mixed_x,
         inputs=mixed_x,
-        grad_outputs=torch.ones_like(d_mixed_x),
+        grad_outputs=torch.ones_like(d_mixed_x), # used to get gard for every instance in the batch
         create_graph=True
     )[0]
     f_norm = torch.norm(grad.view(batch_size, -1), dim=1)
