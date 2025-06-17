@@ -93,6 +93,12 @@ class MADE(nn.Module):
         x = torch.zeros_like(z)
         log_det = None
         ### START CODE HERE ### 
+        for i in range(self.input_size):
+            mu, alpha = self.net(x).tensor_split(2, dim=1)
+            x[:,i] = torch.einsum("i,i->i", z[:,i], torch.exp(alpha[:,i])) + mu[:,i]
+        _, alpha = self.net(x).tensor_split(2, dim=1)
+        log_det = -torch.einsum("ij->i", alpha)
+        return x, log_det
         ### END CODE HERE ###
         raise NotImplementedError
 
@@ -104,6 +110,11 @@ class MADE(nn.Module):
         """
         z, log_det = None, None
         ### START CODE HERE ###
+        # z = (x-\mu) / exp(\alpha)
+        mu, alpha = self.net(x).tensor_split(2, dim=1)
+        z = torch.einsum("ij,ij->ij", x-mu, torch.exp(-alpha))
+        log_det = -torch.einsum("ij->i", alpha)
+        return z, log_det
         ### END CODE HERE ###
         raise NotImplementedError
 
@@ -137,6 +148,15 @@ class MAF(nn.Module):
         """
         log_prob = None
         ### START CODE HERE ###
+        batch_size, dim_size = x.shape
+        for flow in self.nf:
+            x, log_det = flow.inverse(x)
+            if log_prob is None:
+                log_prob = log_det.view(batch_size,)
+            else:
+               log_prob += log_det.view(batch_size,)
+        log_prob += -0.5 * dim_size * np.log(2 * np.pi) - 0.5 * (torch.einsum("ij,ij->i", x, x)) # multivariate standard gaussian
+        return log_prob.mean()
         ### END CODE HERE ###
         raise NotImplementedError
 
